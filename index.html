@@ -111,6 +111,8 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
 .close-btn:hover{background:#f5f5f3}
 .btn-open-edit{padding:6px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;background:#1D9E75;color:#fff;cursor:pointer;font-family:'Sora',sans-serif}
 .btn-open-edit:hover{background:#0F6E56}
+.btn-whatsapp{display:flex;align-items:center;gap:5px;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;background:#25D366;color:#fff;cursor:pointer;font-family:'Sora',sans-serif}
+.btn-whatsapp:hover{background:#1ebe5d}
 .back-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;border:0.5px solid #e0e0d8;background:#f5f5f3;cursor:pointer;color:#444;transition:all 0.15s;flex-shrink:0}
 .back-btn:hover{background:#e8e8e4;color:#1a1a1a}
 .mdet-body{padding:18px 20px;flex:1}
@@ -184,6 +186,10 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
     Ver reportes
     <span class="nav-badge" id="navBadge" style="display:none">0</span>
   </button>
+  <button class="nav-tab" id="tab-seguimientos" onclick="showPage('seguimientos')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12c0-3 2-5 6-5s6 2 6 5"/><circle cx="8" cy="5" r="2.5"/><path d="M12 8l2 2-2 2"/></svg>
+    Seguimientos
+  </button>
 </nav>
 
 <div class="offline-bar" id="offlineBar">
@@ -252,9 +258,17 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
       </div>
 
       <div class="sec">Responsable del levantamiento del desvío</div>
-      <div class="g2">
-        <div class="field"><label>Nombre del responsable del levantamiento <span class="req">*</span></label><input type="text" id="reportado" placeholder="Nombre completo" required></div>
-        <div class="field"><label>Cargo del responsable del levantamiento</label><input type="text" id="cargoReportado" placeholder="Ej. Operador de planta"></div>
+      <div class="field" style="position:relative">
+        <label>Nombre del responsable <span class="req">*</span></label>
+        <input type="text" id="reportado" placeholder="Escribe para buscar..." autocomplete="off" oninput="filtrarResponsables()" onfocus="filtrarResponsables()" required>
+        <div id="responsablesDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #ccc;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+      </div>
+      <div class="g2" style="margin-top:12px">
+        <div class="field"><label>Cargo del responsable</label><input type="text" id="cargoReportado" placeholder="Ej. Operador de planta"></div>
+        <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="telefonoReportado" placeholder="51987654321" readonly style="background:#f5f5f3;color:#666"></div>
+      </div>
+      <div class="g2" style="margin-top:12px">
+        <div class="field"><label>DNI</label><input type="text" id="dniReportado" placeholder="—" readonly style="background:#f5f5f3;color:#666"></div>
       </div>
 
       <button type="submit" class="btn-primary" id="btnSubmit">Enviar reporte</button>
@@ -319,12 +333,30 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
   </div>
 </div>
 
+<!-- SEGUIMIENTOS -->
+<div class="page-wide" id="page-seguimientos">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-size:17px;font-weight:600">Seguimientos por WhatsApp</h2>
+      <p style="font-size:12px;color:#888;margin-top:3px">Responsables con desvíos abiertos pendientes de levantar</p>
+    </div>
+    <button class="btn-reload" onclick="cargarSeguimientos()" style="display:flex;align-items:center;gap:5px">↻ Actualizar</button>
+  </div>
+  <div id="seguimientosBody">
+    <div style="text-align:center;padding:3rem;color:#aaa;font-size:13px">Haz clic en "Actualizar" para cargar los seguimientos</div>
+  </div>
+</div>
+
 <!-- OVERLAY DETALLE -->
 <div class="overlay" id="overlayDet">
   <div class="modal-det">
     <div class="mdet-head">
       <h3 id="detTitle">Reporte #</h3>
       <div class="mdet-head-right">
+        <button class="btn-whatsapp" id="btnWhatsapp" onclick="enviarWhatsApp()" title="Enviar seguimiento por WhatsApp">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.114.554 4.099 1.523 5.824L0 24l6.341-1.498A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.002-1.371l-.359-.214-3.724.879.936-3.619-.234-.372A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+          WhatsApp
+        </button>
         <button class="btn-open-edit" onclick="abrirEdicion()">Editar</button>
         <button class="close-btn" onclick="closeDetalle()">&#215;</button>
       </div>
@@ -371,10 +403,11 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcqRNfuFvJONphmMFxbgLBYB2ax1IUTAziCYZi99pS0THWiKJEeN3CdGmtxRRd1Ue/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4n2CrecR4T6bLG_4VBSSoVl4YxxfXm1FNX3Jrveg-Hw-tGeEKzrTdy9mR38CXik6u/exec";
 const PENDING_KEY = 'desvios_pending';
 
 let allData = [];
+let responsablesData = [];
 let currentFilter = 'all';
 let currentRow = null;
 let levFiles = [];
@@ -458,6 +491,10 @@ function showPage(page) {
     document.getElementById('page-form').classList.add('active');
     document.getElementById('tab-form').classList.add('active');
     setDateTime();
+  } else if (page === 'seguimientos') {
+    document.getElementById('page-seguimientos').classList.add('active');
+    document.getElementById('tab-seguimientos').classList.add('active');
+    cargarSeguimientos();
   } else {
     document.getElementById('page-panel').classList.add('active');
     document.getElementById('tab-panel').classList.add('active');
@@ -527,7 +564,9 @@ document.getElementById('mainForm').addEventListener('submit', async function(e)
       reportante: document.getElementById('reportante').value,
       cargoReportante: document.getElementById('cargoReportante').value,
       reportado: document.getElementById('reportado').value,
-      cargoReportado: document.getElementById('cargoReportado').value
+      cargoReportado: document.getElementById('cargoReportado').value,
+      telefonoReportado: document.getElementById('telefonoReportado').value,
+      dniReportado: document.getElementById('dniReportado').value
     };
 
     if (!isOnline) {
@@ -692,6 +731,7 @@ function openDetalle(r) {
   currentRow = r;
   document.getElementById('detTitle').textContent = `Reporte #${r['ID']}`;
   document.querySelector('.btn-open-edit').style.display = r['Estatus'] === 'Abierto' ? '' : 'none';
+  document.getElementById('btnWhatsapp').style.display   = r['Estatus'] === 'Abierto' ? '' : 'none';
 
   function fotoCard(url, label) {
     const src = driveImgUrl(url);
@@ -732,6 +772,25 @@ function openDetalle(r) {
 }
 
 function closeDetalle() { document.getElementById('overlayDet').classList.remove('open'); }
+
+function enviarWhatsApp() {
+  const r = currentRow;
+  const tel = String(r['Telefono'] || r['Teléfono'] || r['telefonoReportado'] || '').replace(/\D/g,'');
+  const nombre = r['Nombre reportado'] || 'Responsable';
+  const id     = r['ID'] || '';
+  const fecha  = r['Fecha'] || '';
+  const lugar  = r['Lugar/Labor'] || '';
+  const nivel  = r['Nivel'] || '';
+  const desc   = r['Descripción'] || '';
+
+  const msg = `*Seguimiento Desvío #${id} — Compañía Minera Casma SAC*\n\nEstimado/a *${nombre}*, le informamos que tiene pendiente el levantamiento del siguiente desvío:\n\n📅 Fecha: ${fecha}\n📍 Lugar/Labor: ${lugar}\n📐 Nivel: ${nivel}\n📋 Descripción: ${desc}\n\nPor favor coordine el levantamiento a la brevedad y comuníquese con el área HSE.\n\n_Compañía Minera Casma SAC — Sistema de Desvíos HSE_`;
+
+  const url = tel
+    ? `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+  window.open(url, '_blank');
+}
 
 /* ── EDICIÓN ── */
 function abrirEdicion() {
@@ -836,6 +895,125 @@ async function saveEdit() {
 }
 
 updateOfflineBar();
+
+/* ── AUTOCOMPLETE RESPONSABLES ── */
+async function cargarResponsables() {
+  if (responsablesData.length) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=responsables');
+    const json = await res.json();
+    if (json.result === 'success') responsablesData = json.responsables || [];
+  } catch {}
+}
+
+function filtrarResponsables() {
+  const q = document.getElementById('reportado').value.toLowerCase().trim();
+  const dd = document.getElementById('responsablesDropdown');
+  if (responsablesData.length === 0) cargarResponsables();
+  if (!q) { dd.style.display = 'none'; return; }
+  const matches = responsablesData.filter(r =>
+    String(r['Nombre'] || '').toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(r => `
+    <div onclick="seleccionarResponsable(${JSON.stringify(r).replace(/"/g,'&quot;')})"
+      style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid #f0f0ec;display:flex;justify-content:space-between;align-items:center"
+      onmouseover="this.style.background='#f4fdf9'" onmouseout="this.style.background=''">
+      <span style="font-weight:500">${r['Nombre']}</span>
+      <span style="font-size:11px;color:#aaa">${r['DNI'] || ''}</span>
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function seleccionarResponsable(r) {
+  document.getElementById('reportado').value          = r['Nombre']   || '';
+  document.getElementById('telefonoReportado').value  = r['Telefono'] || '';
+  document.getElementById('dniReportado').value       = r['DNI']      || '';
+  document.getElementById('responsablesDropdown').style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#reportado') && !e.target.closest('#responsablesDropdown'))
+    document.getElementById('responsablesDropdown').style.display = 'none';
+});
+
+/* ── SEGUIMIENTOS ── */
+async function cargarSeguimientos() {
+  const body = document.getElementById('seguimientosBody');
+  body.innerHTML = '<div style="text-align:center;padding:3rem;color:#aaa;font-size:13px">Cargando...</div>';
+  try {
+    if (!allData.length) {
+      const res = await fetch(SCRIPT_URL);
+      const json = await res.json();
+      if (json.result === 'success') { allData = json.reportes || []; poblarAnios(); renderTable(); updateBadge(); }
+    }
+    const res2 = await fetch(SCRIPT_URL + '?action=responsables');
+    const json2 = await res2.json();
+    const responsables = json2.result === 'success' ? (json2.responsables || []) : [];
+
+    const abiertos = allData.filter(r => r['Estatus'] === 'Abierto');
+    const porPersona = {};
+    abiertos.forEach(r => {
+      const nombre = String(r['Nombre reportado'] || '').trim();
+      if (!nombre) return;
+      if (!porPersona[nombre]) porPersona[nombre] = [];
+      porPersona[nombre].push(r);
+    });
+
+    const conPendientes = responsables
+      .map(resp => ({
+        nombre:   String(resp['Nombre']   || '').trim(),
+        telefono: String(resp['Telefono'] || '').trim(),
+        dni:      String(resp['DNI']      || '').trim(),
+        desvios:  porPersona[String(resp['Nombre'] || '').trim()] || []
+      }))
+      .filter(r => r.desvios.length > 0);
+
+    const nombresEnLista = new Set(responsables.map(r => String(r['Nombre'] || '').trim()));
+    Object.entries(porPersona).forEach(([nombre, desvios]) => {
+      if (!nombresEnLista.has(nombre))
+        conPendientes.push({ nombre, telefono: '', dni: '', desvios });
+    });
+
+    if (!conPendientes.length) {
+      body.innerHTML = '<div style="text-align:center;padding:3rem;color:#1D9E75;font-size:14px;font-weight:500">✓ Sin desvíos abiertos pendientes</div>';
+      return;
+    }
+
+    const LINK = 'https://nicocorp711-ui.github.io/seguimientos-casma/';
+
+    body.innerHTML = conPendientes.map(p => {
+      const msg = `Estimado/a *${p.nombre}*, le informamos que tiene *${p.desvios.length} desvío${p.desvios.length>1?'s':''} abierto${p.desvios.length>1?'s':''}* pendiente${p.desvios.length>1?'s':''} de levantar:\n\n${p.desvios.map(d=>`• Desvío ${d['ID']?'#'+d['ID']:''} — ${d['Lugar/Labor']||''} ${d['Nivel']?'/ '+d['Nivel']:''}\n  📋 ${d['Descripción']?(d['Descripción']+'').substring(0,80)+'...':''}`).join('\n\n')}\n\nIngrese al sistema para registrar el levantamiento:\n${LINK}\n\n_Compañía Minera Casma SAC — Sistema de Desvíos HSE_`;
+      const waUrl = p.telefono
+        ? `https://wa.me/${p.telefono.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`
+        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      return `<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:16px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:600">${p.nombre}</div>
+          <div style="font-size:11px;color:#888;margin-top:3px">
+            ${p.telefono?`📱 ${p.telefono}`:'<span style="color:#E24B4A">Sin teléfono registrado</span>'}
+            ${p.dni?` &nbsp;·&nbsp; DNI: ${p.dni}`:''}
+          </div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">
+            ${p.desvios.map(d=>`<span style="font-size:11px;background:#fcebeb;color:#A32D2D;padding:2px 8px;border-radius:10px;font-weight:600">Desvío #${d['ID']} — ${d['Lugar/Labor']||'—'}</span>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div style="text-align:center">
+            <div style="font-size:22px;font-weight:700;color:#A32D2D">${p.desvios.length}</div>
+            <div style="font-size:10px;color:#888">pendiente${p.desvios.length>1?'s':''}</div>
+          </div>
+          <a href="${waUrl}" target="_blank" style="display:flex;align-items:center;gap:6px;background:#25D366;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.114.554 4.099 1.523 5.824L0 24l6.341-1.498A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.002-1.371l-.359-.214-3.724.879.936-3.619-.234-.372A9.808 9.808 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+            Enviar WhatsApp
+          </a>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    body.innerHTML = `<div style="text-align:center;padding:2rem;color:#A32D2D;font-size:13px">Error: ${err.message}</div>`;
+  }
+}
 
 /* ── EXPORTAR REPORTE CON FOTOS ── */
 async function exportarExcel() {
