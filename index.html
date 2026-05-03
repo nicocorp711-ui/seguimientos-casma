@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Desvíos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sora',sans-serif;background:#f0f0ec;min-height:100vh;color:#1a1a1a}
+
+.nav{background:#fff;border-bottom:0.5px solid #e0e0d8;padding:0 2rem;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.nav-brand{font-size:14px;font-weight:600;color:#1a1a1a;padding:1rem 1.5rem 1rem 0;border-right:0.5px solid #e8e8e4;margin-right:1.5rem;white-space:nowrap}
+.nav-brand span{color:#1D9E75}
+.nav-tab{padding:1rem 1.25rem;font-size:13px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:6px;background:none;border-top:none;border-left:none;border-right:none;font-family:'Sora',sans-serif}
+.nav-tab:hover{color:#1a1a1a}
+.nav-tab.active{color:#1D9E75;border-bottom-color:#1D9E75}
+.nav-tab svg{width:14px;height:14px;flex-shrink:0}
+.nav-badge{font-size:10px;font-weight:600;background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:10px;line-height:1.6}
+.offline-bar{background:#FAEEDA;border-bottom:0.5px solid #EF9F27;padding:6px 2rem;font-size:12px;color:#854F0B;display:none;align-items:center;gap:8px}
+.offline-bar.show{display:flex}
+.sync-btn{padding:3px 10px;font-size:11px;font-weight:600;border:0.5px solid #854F0B;border-radius:4px;background:transparent;color:#854F0B;cursor:pointer;font-family:'Sora',sans-serif}
+.pending-dot{width:7px;height:7px;border-radius:50%;background:#EF9F27;flex-shrink:0}
+
+.page{display:none;padding:2rem;max-width:760px;margin:0 auto}
+.page.active{display:block}
+.page-wide{display:none;padding:2rem;max-width:1100px;margin:0 auto}
+.page-wide.active{display:block}
+
+.card{background:#fff;border-radius:12px;border:0.5px solid #e0e0d8;padding:2rem}
+.form-header{border-left:3px solid #1D9E75;padding-left:1rem;margin-bottom:2rem}
+.form-header h1{font-size:19px;font-weight:600;color:#1a1a1a}
+.form-header p{font-size:13px;color:#888;margin-top:3px}
+.sec{font-size:11px;font-weight:600;color:#1D9E75;letter-spacing:0.08em;text-transform:uppercase;margin:1.5rem 0 0.75rem;padding-bottom:4px;border-bottom:0.5px solid #e8e8e4}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;font-weight:500;color:#666}
+label .req{color:#D85A30;margin-left:2px}
+input,select,textarea{font-family:'Sora',sans-serif;font-size:13px;color:#1a1a1a;background:#fff;border:0.5px solid #ccc;border-radius:6px;padding:8px 10px;width:100%;outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:#1D9E75;box-shadow:0 0 0 2.5px rgba(29,158,117,0.1)}
+input[readonly]{background:#f5f5f3;color:#666;cursor:default}
+textarea{resize:vertical;min-height:88px;line-height:1.5}
+.upload-box{border:0.5px dashed #ccc;border-radius:6px;padding:14px;text-align:center;cursor:pointer;background:#fafaf8;position:relative;transition:all 0.15s}
+.upload-box:hover{border-color:#1D9E75;background:rgba(29,158,117,0.03)}
+.upload-box.error{border-color:#E24B4A;background:#fff8f8}
+.upzone.error{border-color:#E24B4A;background:#fff8f8}
+.upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-box p{font-size:12px;color:#999}
+.upload-box .fn{font-size:12px;color:#1D9E75;margin-top:3px;font-weight:500}
+.upload-icon{width:22px;height:22px;margin:0 auto 6px;opacity:0.35;display:block}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sopt{position:relative}
+.sopt input[type=radio]{position:absolute;opacity:0;width:0;height:0}
+.sopt label{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border:0.5px solid #ccc;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:#888;transition:all 0.15s}
+.sopt input:checked+label{border-color:#1D9E75;color:#1D9E75;background:rgba(29,158,117,0.07)}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.da{background:#E24B4A}.dc{background:#639922}
+.btn-primary{width:100%;margin-top:1.5rem;padding:12px;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:#fff;background:#1D9E75;border:none;border-radius:8px;cursor:pointer;transition:all 0.15s}
+.btn-primary:hover{background:#0F6E56}
+.btn-primary:disabled{background:#aaa;cursor:not-allowed}
+.msg{margin-top:1rem;padding:11px 14px;border-radius:6px;font-size:13px;display:none}
+.msg.ok{background:#EAF3DE;color:#3B6D11;border:0.5px solid #97C459;display:block}
+.msg.err{background:#FCEBEB;color:#A32D2D;border:0.5px solid #F09595;display:block}
+.msg.warn{background:#FAEEDA;color:#854F0B;border:0.5px solid #EF9F27;display:block}
+
+/* PANEL */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1.25rem;max-width:400px}
+.stat{background:#fff;border-radius:8px;border:0.5px solid #e8e8e4;padding:12px 16px}
+.stat-n{font-size:24px;font-weight:600;line-height:1}
+.stat-l{font-size:11px;color:#888;margin-top:3px}
+.nred{color:#A32D2D}.ngrn{color:#3B6D11}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.topbar-left{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.topbar h2{font-size:16px;font-weight:600}
+.fbtn{padding:5px 12px;font-size:12px;font-weight:500;border:0.5px solid #ccc;border-radius:20px;background:#fff;color:#888;cursor:pointer;transition:all 0.12s;font-family:'Sora',sans-serif}
+.fbtn:hover{background:#f0f0ec}
+.fbtn.fa.active{border-color:#888;color:#444;background:#f0f0ec}
+.fbtn.fo.active{border-color:#A32D2D;color:#A32D2D;background:#FCEBEB}
+.fbtn.fc.active{border-color:#3B6D11;color:#3B6D11;background:#EAF3DE}
+.sbox{display:flex;align-items:center;gap:6px;border:0.5px solid #ccc;border-radius:6px;padding:6px 10px;background:#fff}
+.sbox input{border:none;outline:none;font-size:13px;font-family:'Sora',sans-serif;width:150px;color:#1a1a1a;background:transparent}
+.btn-reload{padding:7px 13px;font-size:12px;font-weight:500;border:0.5px solid #1D9E75;border-radius:6px;background:#fff;color:#1D9E75;cursor:pointer;transition:all 0.12s;font-family:'Sora',sans-serif}
+.btn-reload:hover{background:#E1F5EE}
+.table-card{background:#fff;border:0.5px solid #e8e8e4;border-radius:10px;overflow:hidden}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:700px}
+thead tr{background:#fafaf8}
+th{font-size:11px;font-weight:600;color:#888;text-align:left;padding:10px 12px;border-bottom:0.5px solid #e8e8e4;white-space:nowrap}
+td{font-size:13px;padding:10px 12px;border-bottom:0.5px solid #f0f0ec;color:#1a1a1a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f5f9f7;cursor:pointer}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.bd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ba{background:#FCEBEB;color:#A32D2D}.ba .bd{background:#E24B4A}
+.bc{background:#EAF3DE;color:#3B6D11}.bc .bd{background:#639922}
+.btn-edit{padding:5px 10px;font-size:11px;font-weight:500;border:0.5px solid #ccc;border-radius:5px;background:#fff;color:#666;cursor:pointer;transition:all 0.12s;font-family:'Sora',sans-serif}
+.btn-edit:hover{background:#E1F5EE;border-color:#1D9E75;color:#0F6E56}
+.empty{text-align:center;padding:3rem;color:#aaa;font-size:13px}
+
+/* OVERLAY BASE */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+
+/* MODAL DETALLE */
+.modal-det{background:#fff;border-radius:14px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;border:0.5px solid #ddd;display:flex;flex-direction:column}
+.mdet-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:0.5px solid #eee;position:sticky;top:0;background:#fff;z-index:1}
+.mdet-head h3{font-size:15px;font-weight:600}
+.mdet-head-right{display:flex;align-items:center;gap:8px}
+.close-btn{width:28px;height:28px;border:0.5px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;font-size:18px;color:#888;display:flex;align-items:center;justify-content:center}
+.close-btn:hover{background:#f5f5f3}
+.btn-open-edit{padding:6px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;background:#1D9E75;color:#fff;cursor:pointer;font-family:'Sora',sans-serif}
+.btn-open-edit:hover{background:#0F6E56}
+.back-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;border:0.5px solid #e0e0d8;background:#f5f5f3;cursor:pointer;color:#444;transition:all 0.15s;flex-shrink:0}
+.back-btn:hover{background:#e8e8e4;color:#1a1a1a}
+.mdet-body{padding:18px 20px;flex:1}
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.det-item{background:#fafaf8;border-radius:7px;padding:9px 12px}
+.det-item.full{grid-column:1/-1}
+.det-lbl{font-size:11px;color:#999;margin-bottom:3px;font-weight:500}
+.det-val{font-size:13px;color:#1a1a1a;font-weight:500;word-break:break-word;white-space:normal}
+.det-desc{background:#fafaf8;border-radius:7px;padding:10px 14px;margin-bottom:16px}
+.det-desc .det-lbl{margin-bottom:5px}
+.det-desc .det-val{font-weight:400;line-height:1.6}
+.photos-sec{margin-top:4px}
+.photos-title{font-size:11px;font-weight:600;color:#1D9E75;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;padding-bottom:4px;border-bottom:0.5px solid #e8e8e4}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.photo-card{border-radius:8px;overflow:hidden;border:0.5px solid #e8e8e4;background:#f5f5f3}
+.photo-card img{width:100%;height:110px;object-fit:cover;display:block}
+.photo-card-lbl{font-size:11px;color:#888;padding:6px 8px;font-weight:500}
+.photo-placeholder{width:100%;height:110px;display:flex;align-items:center;justify-content:center;background:#f0f0ec}
+.photo-placeholder svg{width:28px;height:28px;opacity:0.25}
+.no-photo{font-size:11px;color:#bbb;padding:6px 8px}
+
+/* MODAL EDICIÓN */
+.modal-edit{background:#fff;border-radius:12px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border:0.5px solid #ddd}
+.modal-head{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:15px 20px;border-bottom:0.5px solid #eee;position:sticky;top:0;background:#fff;z-index:1}
+.modal-head h3{font-size:15px;font-weight:600;flex:1}
+.modal-body{padding:16px 20px}
+.info-card{background:#fafaf8;border-radius:7px;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.ic{font-size:12px;color:#888}.ic span{color:#1a1a1a;font-weight:500}
+.msec{font-size:11px;font-weight:600;color:#1D9E75;text-transform:uppercase;letter-spacing:0.07em;margin:12px 0 8px;padding-bottom:4px;border-bottom:0.5px solid #e8e8e4}
+.upzone{border:0.5px dashed #ccc;border-radius:7px;padding:12px;text-align:center;background:#fafaf8;position:relative;cursor:pointer;margin-bottom:10px;transition:all 0.12s}
+.upzone:hover{border-color:#1D9E75}
+.upzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upzone p{font-size:12px;color:#999}
+.upzone .fn{font-size:12px;color:#1D9E75;font-weight:500;margin-top:3px}
+.prev-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.thumb{width:60px;height:60px;border-radius:6px;border:0.5px solid #ddd;overflow:hidden;background:#f5f5f3}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.modal-foot{padding:12px 20px;border-top:0.5px solid #eee;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:#fff}
+.btn-cancel{padding:8px 16px;font-size:13px;border:0.5px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;color:#666;font-family:'Sora',sans-serif}
+.btn-cancel:hover{background:#f5f5f3}
+.btn-save{padding:8px 20px;font-size:13px;font-weight:600;border:none;border-radius:6px;background:#1D9E75;color:#fff;cursor:pointer;font-family:'Sora',sans-serif}
+.btn-save:hover{background:#0F6E56}
+.btn-save:disabled{background:#aaa;cursor:not-allowed}
+.mmsg{margin-top:10px;padding:9px 12px;border-radius:6px;font-size:12px}
+.mmsg.ok{background:#EAF3DE;color:#3B6D11;border:0.5px solid #97C459}
+.mmsg.err{background:#FCEBEB;color:#A32D2D;border:0.5px solid #F09595}
+
+@media(max-width:600px){
+  .nav{padding:0 1rem}
+  .nav-brand{padding:1rem 1rem 1rem 0;font-size:13px}
+  .page,.page-wide{padding:1rem}
+  .g2,.g3{grid-template-columns:1fr}
+  .sgrid{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:1fr 1fr;max-width:100%}
+  .sbox input{width:100px}
+  .det-grid{grid-template-columns:1fr}
+  .det-item.full{grid-column:1}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">Desvíos <span>HSE</span></div>
+  <button class="nav-tab active" id="tab-form" onclick="showPage('form')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="5" y1="6" x2="11" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/></svg>
+    Nuevo reporte
+  </button>
+  <button class="nav-tab" id="tab-panel" onclick="showPage('panel')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="14" height="10" rx="2"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="5" y1="3" x2="5" y2="13"/></svg>
+    Ver reportes
+    <span class="nav-badge" id="navBadge" style="display:none">0</span>
+  </button>
+</nav>
+
+<div class="offline-bar" id="offlineBar">
+  <span class="pending-dot"></span>
+  <span id="offlineMsg">Sin conexión — los reportes se guardarán localmente</span>
+  <button class="sync-btn" onclick="syncPending()">Sincronizar ahora</button>
+</div>
+
+<!-- FORMULARIO -->
+<div class="page active" id="page-form">
+  <div class="card">
+    <div class="form-header">
+      <h1>Nuevo reporte de desvío</h1>
+      <p>Completa los datos del hallazgo encontrado</p>
+    </div>
+    <form id="mainForm">
+      <div class="sec">Datos del evento</div>
+      <div class="g3">
+        <div class="field"><label>Fecha</label><input type="text" id="fecha" readonly></div>
+        <div class="field"><label>Hora</label><input type="text" id="hora" readonly></div>
+        <div class="field"><label>Turno <span class="req">*</span></label>
+          <select id="turno" required><option value="">Seleccionar</option><option>Día</option><option>Noche</option></select>
+        </div>
+      </div>
+      <div class="g2" style="margin-top:12px">
+        <div class="field"><label>Lugar/Labor <span class="req">*</span></label><input type="text" id="lugar" placeholder="Lugar o labor" required></div>
+        <div class="field"><label>Nivel</label><input type="text" id="nivel" placeholder="Escribe el nivel"></div>
+      </div>
+      <div class="g2" style="margin-top:12px">
+        <div class="field"><label>Zona <span class="req">*</span></label>
+          <select id="zona" required>
+            <option value="">Seleccionar</option>
+            <option>ALTA</option>
+            <option>BAJA</option>
+          </select>
+        </div>
+        <div class="field"><label>Riesgo <span class="req">*</span></label>
+          <select id="riesgo" required>
+            <option value="">Seleccionar</option>
+            <option>Alto</option>
+            <option>Medio</option>
+            <option>Bajo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sec">Descripción del desvío</div>
+      <div class="field"><label>Descripción detallada <span class="req">*</span></label>
+        <textarea id="descripcion" placeholder="Describa el desvío encontrado, contexto, condiciones, etc." required></textarea>
+      </div>
+
+      <div class="sec">Foto del hallazgo <span class="req">*</span></div>
+      <div class="field">
+        <div class="upload-box" id="uploadBoxHallazgo">
+          <input type="file" id="fotoHallazgo" accept="image/*" onchange="showName('fotoHallazgo','n1')">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4-4 4 4 4-8 4 8"/><rect x="2" y="3" width="20" height="18" rx="2"/></svg>
+          <p>Toca para adjuntar foto del hallazgo</p>
+          <p class="fn" id="n1"></p>
+        </div>
+      </div>
+
+      <div class="sec">Inspector Observador</div>
+      <div class="g2">
+        <div class="field"><label>Nombre del inspector observador <span class="req">*</span></label><input type="text" id="reportante" placeholder="Nombre completo" required></div>
+        <div class="field"><label>Cargo del inspector observador</label><input type="text" id="cargoReportante" placeholder="Ej. Supervisor HSE"></div>
+      </div>
+
+      <div class="sec">Responsable del levantamiento del desvío</div>
+      <div class="g2">
+        <div class="field"><label>Nombre del responsable del levantamiento <span class="req">*</span></label><input type="text" id="reportado" placeholder="Nombre completo" required></div>
+        <div class="field"><label>Cargo del responsable del levantamiento</label><input type="text" id="cargoReportado" placeholder="Ej. Operador de planta"></div>
+      </div>
+
+      <button type="submit" class="btn-primary" id="btnSubmit">Enviar reporte</button>
+      <div class="msg" id="msgForm"></div>
+    </form>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div class="page-wide" id="page-panel">
+  <div class="stats">
+    <div class="stat"><div class="stat-n nred" id="sA">—</div><div class="stat-l">Abiertos</div></div>
+    <div class="stat"><div class="stat-n ngrn" id="sC">—</div><div class="stat-l">Cerrados</div></div>
+  </div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <h2>Todos los reportes</h2>
+      <button class="fbtn fa active" onclick="setFilter('all',this)">Todos</button>
+      <button class="fbtn fo" onclick="setFilter('Abierto',this)">Abierto</button>
+      <button class="fbtn fc" onclick="setFilter('Cerrado',this)">Cerrado</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="anioFilter" onchange="renderTable()" style="font-family:'Sora',sans-serif;font-size:12px;font-weight:500;color:#555;background:#fff;border:0.5px solid #ddd;border-radius:6px;padding:6px 10px;cursor:pointer;outline:none">
+        <option value="">Todos los años</option>
+      </select>
+      <select id="mesFilter" onchange="renderTable()" style="font-family:'Sora',sans-serif;font-size:12px;font-weight:500;color:#555;background:#fff;border:0.5px solid #ddd;border-radius:6px;padding:6px 10px;cursor:pointer;outline:none">
+        <option value="">Todos los meses</option>
+        <option value="0">Enero</option>
+        <option value="1">Febrero</option>
+        <option value="2">Marzo</option>
+        <option value="3">Abril</option>
+        <option value="4">Mayo</option>
+        <option value="5">Junio</option>
+        <option value="6">Julio</option>
+        <option value="7">Agosto</option>
+        <option value="8">Septiembre</option>
+        <option value="9">Octubre</option>
+        <option value="10">Noviembre</option>
+        <option value="11">Diciembre</option>
+      </select>
+      <div class="sbox">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#aaa" stroke-width="2"><circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="15" y2="15"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar..." oninput="renderTable()">
+      </div>
+      <button class="btn-reload" onclick="cargarDatos()">↻ Actualizar</button>
+      <button class="btn-reload" onclick="exportarExcel()" style="background:#7A6830;color:#fff;border-color:#7A6830;display:flex;align-items:center;gap:5px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Generar reporte
+      </button>
+    </div>
+  </div>
+  <div class="table-card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Fecha</th><th>Turno</th><th>Lugar/Labor</th><th>Nivel</th>
+          <th>Zona</th><th>Riesgo</th><th>Descripción</th><th>Estatus</th><th>Inspector observador</th><th>Resp. levantamiento</th><th>Acción</th>
+        </tr></thead>
+        <tbody id="tableBody"><tr><td colspan="12" class="empty">Haz clic en "Ver reportes" para cargar los datos</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY DETALLE -->
+<div class="overlay" id="overlayDet">
+  <div class="modal-det">
+    <div class="mdet-head">
+      <h3 id="detTitle">Reporte #</h3>
+      <div class="mdet-head-right">
+        <button class="btn-open-edit" onclick="abrirEdicion()">Editar</button>
+        <button class="close-btn" onclick="closeDetalle()">&#215;</button>
+      </div>
+    </div>
+    <div class="mdet-body" id="detBody"></div>
+  </div>
+</div>
+
+<!-- OVERLAY EDICIÓN -->
+<div class="overlay" id="overlayEdit">
+  <div class="modal-edit">
+    <div class="modal-head">
+      <button class="back-btn" onclick="closeEdit(); openDetalle(currentRow);" title="Volver al detalle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+      </button>
+      <h3 id="editTitle">Editar reporte</h3>
+      <button class="close-btn" onclick="closeEdit()">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-card" id="editInfo"></div>
+      <div class="msec">Cambiar estatus</div>
+      <div class="sgrid">
+        <div class="sopt"><input type="radio" name="me" id="me1" value="Abierto"><label for="me1"><span class="sdot da"></span>Abierto</label></div>
+        <div class="sopt"><input type="radio" name="me" id="me2" value="Cerrado"><label for="me2"><span class="sdot dc"></span>Cerrado</label></div>
+      </div>
+      <div class="msec">Foto del levantamiento <span class="req">*</span></div>
+      <div class="upzone" id="upzoneLev">
+        <input type="file" id="fotoLevantamiento" accept="image/*" multiple onchange="handleUpload('fotoLevantamiento','prevLev','namesLev')">
+        <p>Toca para subir foto(s) del levantamiento (máx. 5)</p>
+        <p class="fn" id="namesLev"></p>
+      </div>
+      <div class="prev-row" id="prevLev"></div>
+      <div class="msec">Medidas / acciones realizadas</div>
+      <div style="padding:0 0 4px">
+        <textarea id="medidasAcciones" placeholder="Describe las medidas o acciones tomadas para levantar el desvío..." style="min-height:100px"></textarea>
+      </div>
+      <div id="mmsg" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeEdit()">Cancelar</button>
+      <button class="btn-save" id="btnSave" onclick="saveEdit()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcqRNfuFvJONphmMFxbgLBYB2ax1IUTAziCYZi99pS0THWiKJEeN3CdGmtxRRd1Ue/exec";
+const PENDING_KEY = 'desvios_pending';
+
+let allData = [];
+let currentFilter = 'all';
+let currentRow = null;
+let levFiles = [];
+let panelLoaded = false;
+let isOnline = navigator.onLine;
+
+/* ── OFFLINE ── */
+window.addEventListener('online',  () => { isOnline=true;  updateOfflineBar(); syncPending(); });
+window.addEventListener('offline', () => { isOnline=false; updateOfflineBar(); });
+
+function updateOfflineBar() {
+  const bar = document.getElementById('offlineBar');
+  const pending = getPending();
+  if (!isOnline) {
+    document.getElementById('offlineMsg').textContent = 'Sin conexión — los reportes se guardarán localmente';
+    bar.classList.add('show');
+  } else if (pending.length > 0) {
+    document.getElementById('offlineMsg').textContent = `${pending.length} reporte(s) pendiente(s) de sincronizar`;
+    bar.classList.add('show');
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+function getPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; }
+}
+function savePending(list) {
+  localStorage.setItem(PENDING_KEY, JSON.stringify(list));
+}
+
+async function syncPending() {
+  if (!isOnline) return;
+  const pending = getPending();
+  if (!pending.length) { updateOfflineBar(); return; }
+  let success = 0;
+  for (const payload of pending) {
+    try {
+      const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.result === 'success') success++;
+    } catch {}
+  }
+  if (success > 0) {
+    const remaining = getPending().slice(success);
+    savePending(remaining);
+    panelLoaded = false;
+  }
+  updateOfflineBar();
+}
+
+/* ── FECHA/HORA ── */
+function setDateTime() {
+  const now = new Date();
+  document.getElementById('fecha').value = now.toLocaleDateString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  document.getElementById('hora').value  = now.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+function formatFecha(val) {
+  if (!val) return '—';
+  const s = String(val);
+  if (s.match(/^\d{2}\/\d{2}\/\d{4}$/)) return s;
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toLocaleDateString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  return s;
+}
+function formatHora(val) {
+  if (!val) return '—';
+  const s = String(val);
+  if (s.match(/^\d{2}:\d{2}$/)) return s;
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit', hour12:false });
+  return s;
+}
+setDateTime();
+
+/* ── NAVEGACIÓN ── */
+function showPage(page) {
+  document.querySelectorAll('.page,.page-wide').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  if (page === 'form') {
+    document.getElementById('page-form').classList.add('active');
+    document.getElementById('tab-form').classList.add('active');
+    setDateTime();
+  } else {
+    document.getElementById('page-panel').classList.add('active');
+    document.getElementById('tab-panel').classList.add('active');
+    if (!panelLoaded) { cargarDatos(); panelLoaded = true; }
+  }
+}
+
+/* ── HELPERS ── */
+function showName(inputId, labelId) {
+  const f = document.getElementById(inputId).files[0];
+  if (f) {
+    document.getElementById(labelId).textContent = f.name;
+    document.getElementById('uploadBoxHallazgo').classList.remove('error');
+  }
+}
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    if (!file) { res(null); return; }
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+}
+function toDataURL(file) {
+  return new Promise((res, rej) => {
+    if (!file) { res(null); return; }
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+/* ── FORMULARIO ── */
+document.getElementById('mainForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmit');
+  const msg = document.getElementById('msgForm');
+  msg.className = 'msg'; msg.textContent = '';
+
+  // Validar foto obligatoria
+  const f1 = document.getElementById('fotoHallazgo').files[0];
+  const uploadBox = document.getElementById('uploadBoxHallazgo');
+  if (!f1) {
+    uploadBox.classList.add('error');
+    msg.className = 'msg err';
+    msg.textContent = 'La foto del hallazgo es obligatoria.';
+    return;
+  }
+  uploadBox.classList.remove('error');
+
+  btn.disabled = true; btn.textContent = 'Procesando...';
+  try {
+    const img1 = await toBase64(f1);
+    const payload = {
+      fecha: document.getElementById('fecha').value,
+      hora: document.getElementById('hora').value,
+      turno: document.getElementById('turno').value,
+      lugar: document.getElementById('lugar').value,
+      nivel: document.getElementById('nivel').value,
+      zona: document.getElementById('zona').value,
+      riesgo: document.getElementById('riesgo').value,
+      descripcion: document.getElementById('descripcion').value,
+      fotoHallazgo: img1 || '', fotoHallazgoName: f1 ? f1.name : '',
+      estatus: 'Abierto',
+      reportante: document.getElementById('reportante').value,
+      cargoReportante: document.getElementById('cargoReportante').value,
+      reportado: document.getElementById('reportado').value,
+      cargoReportado: document.getElementById('cargoReportado').value
+    };
+
+    if (!isOnline) {
+      const pending = getPending();
+      pending.push(payload);
+      savePending(pending);
+      msg.className = 'msg warn';
+      msg.textContent = '⚠ Sin conexión. El reporte se guardó localmente y se enviará cuando haya internet.';
+      document.getElementById('mainForm').reset();
+      document.getElementById('n1').textContent = '';
+      setDateTime();
+      updateOfflineBar();
+    } else {
+      const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.result === 'success') {
+        msg.className = 'msg ok';
+        msg.textContent = '✓ Reporte enviado correctamente.';
+        document.getElementById('mainForm').reset();
+        document.getElementById('n1').textContent = '';
+        setDateTime();
+        panelLoaded = false;
+      } else { throw new Error(data.error || 'Error desconocido'); }
+    }
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = 'Error: ' + err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enviar reporte';
+  }
+});
+
+/* ── PANEL ── */
+async function cargarDatos() {
+  document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" class="empty">Cargando reportes...</td></tr>';
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const json = await res.json();
+    if (json.result === 'success') {
+      allData = json.reportes || [];
+      poblarAnios(); renderTable(); updateBadge();
+    } else { throw new Error(json.error); }
+  } catch (err) {
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="10" class="empty">Error al cargar: ${err.message}</td></tr>`;
+  }
+}
+
+function updateBadge() {
+  const n = allData.filter(r => r['Estatus'] === 'Abierto').length;
+  const b = document.getElementById('navBadge');
+  if (n > 0) { b.textContent = n; b.style.display = 'inline'; } else { b.style.display = 'none'; }
+}
+
+function getFiltered() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const mes  = document.getElementById('mesFilter').value;
+  const anio = document.getElementById('anioFilter').value;
+  return allData.filter(r => {
+    const mF = currentFilter === 'all' || r['Estatus'] === currentFilter;
+    const mQ = !q ||
+      String(r['Lugar/Labor']).toLowerCase().includes(q) ||
+      String(r['Nombre reportante']).toLowerCase().includes(q) ||
+      String(r['Nombre reportado']).toLowerCase().includes(q) ||
+      String(r['Descripción']).toLowerCase().includes(q);
+    let mM = true, mA = true;
+    const fecha = new Date(r['Fecha']);
+    if (!isNaN(fecha)) {
+      if (mes  !== '') mM = fecha.getMonth()    === parseInt(mes);
+      if (anio !== '') mA = fecha.getFullYear() === parseInt(anio);
+    }
+    return mF && mQ && mM && mA;
+  });
+}
+
+function poblarAnios() {
+  const sel = document.getElementById('anioFilter');
+  const anios = [...new Set(allData.map(r => {
+    const f = new Date(r['Fecha']);
+    return isNaN(f) ? null : f.getFullYear();
+  }).filter(Boolean))].sort((a, b) => b - a);
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos los años</option>';
+  anios.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    if (String(a) === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function badgeHtml(est) {
+  if (est === 'Abierto') return `<span class="badge ba"><span class="bd"></span>Abierto</span>`;
+  return `<span class="badge bc"><span class="bd"></span>Cerrado</span>`;
+}
+
+function zonaBadge(zona) {
+  if (!zona) return '—';
+  const color = zona === 'ALTA' ? '#7C3AED' : '#2563EB';
+  const bg = zona === 'ALTA' ? '#F3EEFF' : '#EFF6FF';
+  return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bg};color:${color}">${zona}</span>`;
+}
+
+function riesgoBadge(riesgo) {
+  if (!riesgo) return '—';
+  const map = {
+    'Alto':  { bg:'#FCEBEB', color:'#A32D2D' },
+    'Medio': { bg:'#FAEEDA', color:'#854F0B' },
+    'Bajo':  { bg:'#E6F7F1', color:'#1D9E75' }
+  };
+  const s = map[riesgo] || { bg:'#f0f0ec', color:'#888' };
+  return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:${s.bg};color:${s.color}">${riesgo}</span>`;
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  document.getElementById('sA').textContent = allData.filter(r => r['Estatus'] === 'Abierto').length;
+  document.getElementById('sC').textContent = allData.filter(r => r['Estatus'] === 'Cerrado').length;
+  if (!rows.length) {
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" class="empty">No se encontraron reportes</td></tr>';
+    return;
+  }
+  document.getElementById('tableBody').innerHTML = rows.map(r => `
+    <tr onclick="openDetalle(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+      <td style="color:#aaa;font-size:12px">${r['ID']}</td>
+      <td style="font-size:12px">${formatFecha(r['Fecha'])}</td>
+      <td style="font-size:12px">${r['Turno'] || '—'}</td>
+      <td>${r['Lugar/Labor'] || '—'}</td>
+      <td><span style="font-size:11px;padding:2px 7px;border-radius:4px;background:#f0f0ec;color:#888">${r['Nivel'] || '—'}</span></td>
+      <td>${zonaBadge(r['Zona'])}</td>
+      <td>${riesgoBadge(r['Riesgo'])}</td>
+      <td style="color:#666">${r['Descripción'] || '—'}</td>
+      <td>${badgeHtml(r['Estatus'])}</td>
+      <td style="font-size:12px">${r['Nombre reportante'] || '—'}</td>
+      <td style="font-size:12px">${r['Nombre reportado'] || '—'}</td>
+      <td><button class="btn-edit" onclick="event.stopPropagation();openDetalle(${JSON.stringify(r).replace(/"/g,'&quot;')})">${r['Estatus'] === 'Abierto' ? 'Ver / Editar' : 'Ver'}</button></td>
+    </tr>
+  `).join('');
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+/* ── DETALLE ── */
+function driveImgUrl(url) {
+  if (!url) return '';
+  url = String(url).trim();
+  if (url.startsWith('data:')) return url;
+  let id = null;
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m1) id = m1[1];
+  else if (m2) id = m2[1];
+  if (id) return `https://lh3.googleusercontent.com/d/${id}`;
+  return url;
+}
+
+function openDetalle(r) {
+  currentRow = r;
+  document.getElementById('detTitle').textContent = `Reporte #${r['ID']}`;
+  document.querySelector('.btn-open-edit').style.display = r['Estatus'] === 'Abierto' ? '' : 'none';
+
+  function fotoCard(url, label) {
+    const src = driveImgUrl(url);
+    if (!src) {
+      return `<div class="photo-card"><div class="photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div><div class="no-photo">${label} — sin foto</div></div>`;
+    }
+    return `<div class="photo-card"><img src="${src}" alt="${label}" onerror="this.parentElement.innerHTML='<div class=photo-placeholder><svg viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/>\\</svg>\\</div><p class=no-photo>No disponible</p>'"><div class="photo-card-lbl">${label}</div></div>`;
+  }
+
+
+
+  document.getElementById('detBody').innerHTML = `
+    <div class="det-grid">
+      <div class="det-item"><div class="det-lbl">Fecha</div><div class="det-val">${formatFecha(r['Fecha'])}</div></div>
+      <div class="det-item"><div class="det-lbl">Hora</div><div class="det-val">${formatHora(r['Hora'])}</div></div>
+      <div class="det-item"><div class="det-lbl">Turno</div><div class="det-val">${r['Turno'] || '—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Estatus</div><div class="det-val">${badgeHtml(r['Estatus'])}</div></div>
+      <div class="det-item full"><div class="det-lbl">Lugar/Labor</div><div class="det-val">${r['Lugar/Labor'] || '—'}</div></div>
+      <div class="det-item full"><div class="det-lbl">Nivel</div><div class="det-val">${r['Nivel'] || '—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Zona</div><div class="det-val">${zonaBadge(r['Zona'])}</div></div>
+      <div class="det-item"><div class="det-lbl">Riesgo</div><div class="det-val">${riesgoBadge(r['Riesgo'])}</div></div>
+      <div class="det-item"><div class="det-lbl">Inspector observador</div><div class="det-val">${r['Nombre reportante'] || '—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Cargo inspector observador</div><div class="det-val">${r['Cargo reportante'] || '—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Resp. levantamiento del desvío</div><div class="det-val">${r['Nombre reportado'] || '—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Cargo resp. levantamiento</div><div class="det-val">${r['Cargo reportado'] || '—'}</div></div>
+    </div>
+    <div class="det-desc"><div class="det-lbl">Descripción del desvío</div><div class="det-val">${r['Descripción'] || '—'}</div></div>
+    ${r['Medidas/Acciones'] ? `<div class="det-desc" style="border-left:3px solid #1D9E75;padding-left:12px;background:#f4fdf9;border-radius:0 6px 6px 0"><div class="det-lbl" style="color:#1D9E75">Medidas / acciones realizadas</div><div class="det-val">${r['Medidas/Acciones']}</div></div>` : ''}
+    <div class="photos-sec">
+      <div class="photos-title">Registro fotográfico</div>
+      <div class="photos-grid">
+        ${fotoCard(r['Foto hallazgo'], 'Hallazgo')}
+        ${fotoCard(r['Foto levantamiento'], 'Levantamiento')}
+      </div>
+    </div>
+  `;
+  document.getElementById('overlayDet').classList.add('open');
+}
+
+function closeDetalle() { document.getElementById('overlayDet').classList.remove('open'); }
+
+/* ── EDICIÓN ── */
+function abrirEdicion() {
+  if (!currentRow) return;
+  const r = currentRow;
+  closeDetalle();
+  document.getElementById('editTitle').textContent = `Editar reporte #${r['ID']}`;
+  document.getElementById('editInfo').innerHTML = `
+    <div class="ic">Fecha: <span>${formatFecha(r['Fecha'])}</span></div>
+    <div class="ic">Turno: <span>${r['Turno'] || '—'}</span></div>
+    <div class="ic" style="grid-column:1/-1">Lugar/Labor: <span>${r['Lugar/Labor'] || '—'}</span></div>
+    <div class="ic">Inspector observador: <span>${r['Nombre reportante'] || '—'}</span></div>
+    <div class="ic">Resp. levantamiento: <span>${r['Nombre reportado'] || '—'}</span></div>
+  `;
+  document.querySelectorAll('input[name="me"]').forEach(i => { i.checked = i.value === r['Estatus']; });
+  levFiles = [];
+  document.getElementById('fotoLevantamiento').value = '';
+  document.getElementById('namesLev').textContent = '';
+  document.getElementById('prevLev').innerHTML = '';
+  document.getElementById('upzoneLev').classList.remove('error');
+  document.getElementById('medidasAcciones').value = currentRow['Medidas/Acciones'] || '';
+  const mmsg = document.getElementById('mmsg');
+  mmsg.style.display = 'none'; mmsg.className = '';
+  document.getElementById('btnSave').disabled = false;
+  document.getElementById('btnSave').textContent = 'Guardar cambios';
+  document.getElementById('overlayEdit').classList.add('open');
+}
+
+function closeEdit() { document.getElementById('overlayEdit').classList.remove('open'); }
+
+function handleUpload(inputId, prevId, nameId) {
+  const files = Array.from(document.getElementById(inputId).files).slice(0, 5);
+  levFiles = files;
+  document.getElementById(nameId).textContent = files.length > 0
+    ? files.map(f => f.name).join(', ') + (files.length === 5 ? ' (máx. alcanzado)' : '')
+    : '';
+  document.getElementById('upzoneLev').classList.remove('error');
+  const prev = document.getElementById(prevId);
+  prev.innerHTML = '';
+  files.forEach(f => {
+    const rd = new FileReader();
+    rd.onload = e => {
+      const d = document.createElement('div'); d.className = 'thumb';
+      d.innerHTML = `<img src="${e.target.result}">`;
+      prev.appendChild(d);
+    };
+    rd.readAsDataURL(f);
+  });
+}
+
+async function saveEdit() {
+  const sel = document.querySelector('input[name="me"]:checked');
+  const btn = document.getElementById('btnSave');
+  const mmsg = document.getElementById('mmsg');
+  mmsg.style.display = 'none';
+
+  // Validar foto de levantamiento obligatoria
+  if (levFiles.length === 0) {
+    document.getElementById('upzoneLev').classList.add('error');
+    mmsg.className = 'mmsg err';
+    mmsg.textContent = 'La foto del levantamiento es obligatoria para guardar cambios.';
+    mmsg.style.display = 'block';
+    return;
+  }
+  document.getElementById('upzoneLev').classList.remove('error');
+
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const b64Levs = await Promise.all(levFiles.map(f => toBase64(f)));
+    const payload = {
+      action: 'update',
+      id: currentRow['ID'],
+      estatus: sel ? sel.value : currentRow['Estatus'],
+      medidas: document.getElementById('medidasAcciones').value,
+      fotoLevantamiento: b64Levs[0] || '',
+      fotoLevantamientoName: levFiles[0] ? levFiles[0].name : '',
+      fotosLevantamiento: b64Levs,
+      fotosLevantamientoNames: levFiles.map(f => f.name)
+    };
+    const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const result = await res.json();
+    if (result.result === 'success') {
+      const idx = allData.findIndex(r => String(r['ID']) === String(currentRow['ID']));
+      if (idx > -1) {
+        allData[idx]['Estatus'] = payload.estatus;
+        allData[idx]['Medidas/Acciones'] = payload.medidas || '';
+        currentRow = allData[idx];
+      }
+      renderTable(); updateBadge();
+      mmsg.className = 'mmsg ok';
+      mmsg.textContent = '✓ Reporte actualizado correctamente.';
+      mmsg.style.display = 'block';
+      btn.textContent = 'Guardado';
+      setTimeout(closeEdit, 1600);
+    } else { throw new Error(result.error || 'Error desconocido'); }
+  } catch (err) {
+    mmsg.className = 'mmsg err';
+    mmsg.textContent = 'Error: ' + err.message;
+    mmsg.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Guardar cambios';
+  }
+}
+
+updateOfflineBar();
+
+/* ── EXPORTAR REPORTE CON FOTOS ── */
+async function exportarExcel() {
+  const datos = getFiltered();
+  if (!datos.length) { alert('No hay datos para exportar con los filtros actuales.'); return; }
+
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const anioVal = document.getElementById('anioFilter').value;
+  const mesVal  = document.getElementById('mesFilter').value;
+  const estVal  = document.querySelector('.fbtn.active')?.textContent?.trim() || 'Todos';
+  const busq    = document.getElementById('searchInput').value;
+  const partes  = [];
+  if (anioVal) partes.push(`Año: ${anioVal}`);
+  if (mesVal !== '') partes.push(`Mes: ${meses[parseInt(mesVal)]}`);
+  if (estVal !== 'Todos') partes.push(`Estatus: ${estVal}`);
+  if (busq) partes.push(`Búsqueda: "${busq}"`);
+  const filtroTxt = partes.length ? partes.join(' &nbsp;|&nbsp; ') : 'Sin filtros — todos los registros';
+
+  const imgTag = (url) => {
+    const src = driveImgUrl(url);
+    if (!src) return `<span style="color:#aaa;font-size:11px">Sin foto</span>`;
+    return `<img src="${src}" crossorigin="anonymous" style="max-width:110px;max-height:80px;border-radius:4px;object-fit:cover" onerror="this.outerHTML='<span style=color:#aaa;font-size:11px>No disponible</span>'">`;
+  };
+
+  const filas = datos.map((r, i) => {
+    const estBadge = r['Estatus'] === 'Cerrado'
+      ? `<span style="background:#e6f7f1;color:#1D9E75;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">● Cerrado</span>`
+      : `<span style="background:#fcebeb;color:#A32D2D;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">● Abierto</span>`;
+    const bg = i % 2 === 0 ? '#ffffff' : '#f7f7f5';
+    return `<tr style="background:${bg}">
+      <td style="text-align:center;font-weight:600">${r['ID']||''}</td>
+      <td>${r['Fecha']||''}</td>
+      <td>${r['Hora']||''}</td>
+      <td>${r['Turno']||''}</td>
+      <td>${r['Lugar/Labor']||''}</td>
+      <td>${r['Nivel']||''}</td>
+      <td>${r['Zona']||''}</td>
+      <td>${r['Riesgo']||''}</td>
+      <td style="max-width:160px">${r['Descripción']||''}</td>
+      <td style="text-align:center">${imgTag(r['Foto hallazgo'])}</td>
+      <td style="text-align:center">${estBadge}</td>
+      <td style="text-align:center">${imgTag(r['Foto levantamiento'])}</td>
+      <td style="max-width:160px">${r['Medidas/Acciones']||''}</td>
+      <td>${r['Nombre reportante']||''}</td>
+      <td>${r['Cargo reportante']||''}</td>
+      <td>${r['Nombre reportado']||''}</td>
+      <td>${r['Cargo reportado']||''}</td>
+    </tr>`;
+  }).join('');
+
+  const hoy = new Date();
+  const fechaGen = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+
+  const html = `<!DOCTYPE html><html lang="es"><head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; img-src * data: blob:;">
+  <title>Reporte de Desviaciones — Compañía Minera Casma SAC</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0 }
+    body { font-family: Arial, sans-serif; font-size:11px; color:#1a1a1a; background:#fff }
+    .header { background:#4A4A4A; color:#fff; padding:16px 24px 12px }
+    .header h1 { font-size:17px; font-weight:700; letter-spacing:0.03em }
+    .header p  { font-size:11px; color:#ccc; margin-top:2px }
+    .titulo { background:#C9A84C; color:#4A4A4A; padding:10px 24px; font-size:13px; font-weight:700; letter-spacing:0.04em }
+    .meta { background:#faf7ee; padding:8px 24px; font-size:10px; color:#555; border-bottom:1px solid #e8e0c8; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px }
+    table { width:100%; border-collapse:collapse; font-size:10px }
+    thead tr { background:#4A4A4A }
+    thead th { color:#fff; padding:7px 6px; text-align:left; font-weight:600; white-space:nowrap; border-right:1px solid #666 }
+    tbody td { padding:6px; border-bottom:1px solid #e8e8e4; border-right:1px solid #eee; vertical-align:middle }
+    .footer { padding:10px 24px; font-size:9px; color:#aaa; border-top:2px solid #C9A84C; margin-top:8px; text-align:right }
+    .print-btn { position:fixed; bottom:20px; right:20px; display:flex; gap:8px }
+    .print-btn button { border:none; padding:10px 20px; border-radius:6px; font-size:13px; cursor:pointer; font-family:Arial }
+    @media print {
+      .print-btn { display:none }
+      thead { display:table-header-group }
+    }
+  </style>
+  </head><body>
+  <div class="header">
+    <h1>COMPAÑÍA MINERA CASMA SAC</h1>
+    <p>RUC: 20606447192</p>
+  </div>
+  <div class="titulo">REPORTE DE DESVIACIONES — INTERIOR MINA</div>
+  <div class="meta">
+    <span><strong>Filtros:</strong> ${filtroTxt}</span>
+    <span><strong>Total:</strong> ${datos.length} registros &nbsp;|&nbsp; <strong>Generado:</strong> ${fechaGen}</span>
+  </div>
+  <table>
+    <thead><tr>
+      <th>ID</th><th>Fecha</th><th>Hora</th><th>Turno</th><th>Lugar/Labor</th>
+      <th>Nivel</th><th>Zona</th><th>Riesgo</th><th>Descripción</th>
+      <th>Foto hallazgo</th><th>Estatus</th><th>Foto levantamiento</th>
+      <th>Medidas/Acciones</th><th>Nombre reportante</th><th>Cargo reportante</th>
+      <th>Nombre reportado</th><th>Cargo reportado</th>
+    </tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <div class="footer">Compañía Minera Casma SAC — RUC 20606447192 — Generado el ${fechaGen}</div>
+  <div class="print-btn">
+    <button onclick="window.print()" style="background:#4A4A4A;color:#fff">🖨 Imprimir / Guardar PDF</button>
+    <button onclick="window.close()" style="background:#eee;color:#333">✕ Cerrar</button>
+  </div>
+  </body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+</script>
+</body>
+</html>
