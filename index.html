@@ -253,8 +253,12 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
 
       <div class="sec">Inspector Observador</div>
       <div class="g2">
-        <div class="field"><label>Nombre del inspector observador <span class="req">*</span></label><input type="text" id="reportante" placeholder="Nombre completo" required></div>
-        <div class="field"><label>Cargo del inspector observador</label><input type="text" id="cargoReportante" placeholder="Ej. Supervisor HSE"></div>
+        <div class="field" style="position:relative">
+          <label>Nombre del inspector observador <span class="req">*</span></label>
+          <input type="text" id="reportante" placeholder="Escribe para buscar..." autocomplete="off" oninput="filtrarInspectores()" onfocus="filtrarInspectores()" required>
+          <div id="inspectoresDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #ccc;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+        </div>
+        <div class="field"><label>Cargo del inspector observador</label><input type="text" id="cargoReportante" placeholder="Se completa automáticamente" readonly style="background:#f5f5f3;color:#666"></div>
       </div>
 
       <div class="sec">Responsable del levantamiento del desvío</div>
@@ -264,7 +268,7 @@ tbody tr:hover td{background:#f5f9f7;cursor:pointer}
         <div id="responsablesDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #ccc;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
       </div>
       <div class="g2" style="margin-top:12px">
-        <div class="field"><label>Cargo del responsable</label><input type="text" id="cargoReportado" placeholder="Ej. Operador de planta"></div>
+        <div class="field"><label>Cargo del responsable</label><input type="text" id="cargoReportado" placeholder="Se completa automáticamente" readonly style="background:#f5f5f3;color:#666"></div>
         <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="telefonoReportado" placeholder="51987654321" readonly style="background:#f5f5f3;color:#666"></div>
       </div>
       <div class="g2" style="margin-top:12px">
@@ -920,13 +924,14 @@ function filtrarResponsables() {
       style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid #f0f0ec;display:flex;justify-content:space-between;align-items:center"
       onmouseover="this.style.background='#f4fdf9'" onmouseout="this.style.background=''">
       <span style="font-weight:500">${r['Nombre']}</span>
-      <span style="font-size:11px;color:#aaa">${r['DNI'] || ''}</span>
+      <span style="font-size:11px;color:#aaa">${r['Cargo'] || r['DNI'] || ''}</span>
     </div>`).join('');
   dd.style.display = 'block';
 }
 
 function seleccionarResponsable(r) {
   document.getElementById('reportado').value          = r['Nombre']   || '';
+  document.getElementById('cargoReportado').value     = r['Cargo']    || '';
   document.getElementById('telefonoReportado').value  = r['Telefono'] || '';
   document.getElementById('dniReportado').value       = r['DNI']      || '';
   document.getElementById('responsablesDropdown').style.display = 'none';
@@ -935,7 +940,35 @@ function seleccionarResponsable(r) {
 document.addEventListener('click', e => {
   if (!e.target.closest('#reportado') && !e.target.closest('#responsablesDropdown'))
     document.getElementById('responsablesDropdown').style.display = 'none';
+  if (!e.target.closest('#reportante') && !e.target.closest('#inspectoresDropdown'))
+    document.getElementById('inspectoresDropdown').style.display = 'none';
 });
+
+/* ── AUTOCOMPLETE INSPECTOR OBSERVADOR ── */
+function filtrarInspectores() {
+  const q = document.getElementById('reportante').value.toLowerCase().trim();
+  const dd = document.getElementById('inspectoresDropdown');
+  if (responsablesData.length === 0) cargarResponsables();
+  if (!q) { dd.style.display = 'none'; return; }
+  const matches = responsablesData.filter(r =>
+    String(r['Nombre'] || '').toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(r => `
+    <div onclick="seleccionarInspector(${JSON.stringify(r).replace(/"/g,'&quot;')})"
+      style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid #f0f0ec;display:flex;justify-content:space-between;align-items:center"
+      onmouseover="this.style.background='#f4fdf9'" onmouseout="this.style.background=''">
+      <span style="font-weight:500">${r['Nombre']}</span>
+      <span style="font-size:11px;color:#aaa">${r['Cargo'] || ''}</span>
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function seleccionarInspector(r) {
+  document.getElementById('reportante').value      = r['Nombre'] || '';
+  document.getElementById('cargoReportante').value = r['Cargo']  || '';
+  document.getElementById('inspectoresDropdown').style.display = 'none';
+}
 
 /* ── SEGUIMIENTOS ── */
 async function cargarSeguimientos() {
